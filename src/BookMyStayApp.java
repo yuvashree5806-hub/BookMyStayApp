@@ -1,25 +1,57 @@
+import java.util.HashMap;
+
 /**
- * BookMyStay Application
- * Entry point of the Hotel Booking Management System.
- *
- * @author Yuvashree
- * @version 1.0
+ * RoomInventory class manages centralized room availability.
+ * It stores and updates room counts using a HashMap.
  */
+class RoomInventory {
+
+    private HashMap<String, Integer> inventory;
+
+    // Constructor initializes room availability
+    public RoomInventory() {
+        inventory = new HashMap<>();
+
+        inventory.put("Single Room", 10);
+        inventory.put("Double Room", 5);
+        inventory.put("Suite Room", 2);
+    }
+
+    // Method to get availability
+    public int getAvailability(String roomType) {
+        return inventory.getOrDefault(roomType, 0);
+    }
+
+    // Method to update availability
+    public void updateAvailability(String roomType, int newCount) {
+        inventory.put(roomType, newCount);
+    }
+
+    // Display inventory
+    public void displayInventory() {
+        System.out.println("Current Room Inventory\n");
+
+        for (String roomType : inventory.keySet()) {
+            System.out.println(roomType + " : " + inventory.get(roomType));
+        }
+    }
+}
 
 public class BookMyStayApp {
 
-    /**
-     * Main method – starting point of the application
-     */
     public static void main(String[] args) {
 
-        System.out.println("===================================");
-        System.out.println("       Welcome to BookMyStay       ");
-        System.out.println("   Hotel Booking Management App    ");
-        System.out.println("            Version 1.0            ");
-        System.out.println("===================================");
+        // Initialize inventory
+        RoomInventory inventory = new RoomInventory();
 
-        System.out.println("Application started successfully.");
+        // Display current inventory
+        inventory.displayInventory();
 
+        // Example update
+        inventory.updateAvailability("Single Room", 8);
+
+        System.out.println("\nAfter Updating Availability\n");
+
+        inventory.displayInventory();
     }
 }
