@@ -1,91 +1,67 @@
 import java.util.*;
 
-/**
- * Reservation class represents a confirmed booking.
- */
-class Reservation {
-
-    private String reservationId;
-    private String guestName;
-    private String roomType;
-
-    public Reservation(String reservationId, String guestName, String roomType) {
-        this.reservationId = reservationId;
-        this.guestName = guestName;
-        this.roomType = roomType;
-    }
-
-    public String getReservationId() {
-        return reservationId;
-    }
-
-    public String getGuestName() {
-        return guestName;
-    }
-
-    public String getRoomType() {
-        return roomType;
-    }
-
-    public void display() {
-        System.out.println("Reservation ID: " + reservationId);
-        System.out.println("Guest Name: " + guestName);
-        System.out.println("Room Type: " + roomType);
-        System.out.println();
+class InvalidCancellationException extends Exception {
+    public InvalidCancellationException(String message) {
+        super(message);
     }
 }
 
-/**
- * BookingHistory stores confirmed reservations.
- */
-class BookingHistory {
-
-    private List<Reservation> history = new ArrayList<>();
-
-    // Add confirmed booking
-    public void addReservation(Reservation reservation) {
-        history.add(reservation);
-    }
-
-    // Retrieve stored reservations
-    public List<Reservation> getReservations() {
-        return history;
-    }
-}
-
-/**
- * BookingReportService generates reports from booking history.
- */
-class BookingReportService {
-
-    public void generateReport(List<Reservation> reservations) {
-
-        System.out.println("=== Booking History Report ===\n");
-
-        for (Reservation r : reservations) {
-            r.display();
-        }
-
-        System.out.println("Total Reservations: " + reservations.size());
-    }
-}
-
-/**
- * Main Application
- */
 public class BookMyStayApp {
+
+    static HashMap<Integer, String> bookings = new HashMap<>();
+    static HashMap<Integer, String> roomTypes = new HashMap<>();
+    static HashSet<Integer> bookedRooms = new HashSet<>();
+    static HashMap<String, Integer> inventory = new HashMap<>();
+    static Stack<Integer> releasedRooms = new Stack<>();
 
     public static void main(String[] args) {
 
-        BookingHistory history = new BookingHistory();
+        inventory.put("DELUXE", 2);
+        inventory.put("STANDARD", 1);
 
-        // Simulating confirmed bookings
-        history.addReservation(new Reservation("R101", "Alice", "Single"));
-        history.addReservation(new Reservation("R102", "Bob", "Double"));
-        history.addReservation(new Reservation("R103", "Charlie", "Suite"));
+        try {
+            createBooking(101, "Yuva", "DELUXE");
+            cancelBooking(101);
+            cancelBooking(101);
+        } catch (Exception e) {
+            System.out.println("❌ " + e.getMessage());
+        }
 
-        // Admin requests report
-        BookingReportService reportService = new BookingReportService();
-        reportService.generateReport(history.getReservations());
+        displayState();
+    }
+
+    public static void createBooking(int roomNo, String name, String type) {
+
+        bookings.put(roomNo, name);
+        roomTypes.put(roomNo, type);
+        bookedRooms.add(roomNo);
+        inventory.put(type, inventory.get(type) - 1);
+
+        System.out.println("✅ Booking created for Room " + roomNo);
+    }
+
+    public static void cancelBooking(int roomNo) throws InvalidCancellationException {
+
+        if (!bookedRooms.contains(roomNo)) {
+            throw new InvalidCancellationException("No active booking found for Room " + roomNo);
+        }
+
+        String type = roomTypes.get(roomNo);
+
+        releasedRooms.push(roomNo);
+
+        bookings.remove(roomNo);
+        roomTypes.remove(roomNo);
+        bookedRooms.remove(roomNo);
+
+        inventory.put(type, inventory.get(type) + 1);
+
+        System.out.println("↩️ Booking cancelled for Room " + roomNo);
+    }
+
+    public static void displayState() {
+        System.out.println("Bookings: " + bookings);
+        System.out.println("Inventory: " + inventory);
+        System.out.println("Rollback Stack: " + releasedRooms);
     }
 }
