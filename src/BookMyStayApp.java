@@ -1,67 +1,74 @@
 import java.util.*;
 
-class InvalidCancellationException extends Exception {
-    public InvalidCancellationException(String message) {
-        super(message);
+class BookingRequest {
+    int roomNo;
+    String guestName;
+    String roomType;
+
+    BookingRequest(int roomNo, String guestName, String roomType) {
+        this.roomNo = roomNo;
+        this.guestName = guestName;
+        this.roomType = roomType;
     }
 }
 
 public class BookMyStayApp {
 
-    static HashMap<Integer, String> bookings = new HashMap<>();
-    static HashMap<Integer, String> roomTypes = new HashMap<>();
-    static HashSet<Integer> bookedRooms = new HashSet<>();
+    static Queue<BookingRequest> bookingQueue = new LinkedList<>();
     static HashMap<String, Integer> inventory = new HashMap<>();
-    static Stack<Integer> releasedRooms = new Stack<>();
+    static HashSet<Integer> bookedRooms = new HashSet<>();
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
 
         inventory.put("DELUXE", 2);
-        inventory.put("STANDARD", 1);
 
-        try {
-            createBooking(101, "Yuva", "DELUXE");
-            cancelBooking(101);
-            cancelBooking(101);
-        } catch (Exception e) {
-            System.out.println("❌ " + e.getMessage());
-        }
+        bookingQueue.add(new BookingRequest(101, "A", "DELUXE"));
+        bookingQueue.add(new BookingRequest(102, "B", "DELUXE"));
+        bookingQueue.add(new BookingRequest(103, "C", "DELUXE"));
 
-        displayState();
+        Runnable task = () -> {
+            while (true) {
+                processBooking();
+                if (bookingQueue.isEmpty()) break;
+            }
+        };
+
+        Thread t1 = new Thread(task);
+        Thread t2 = new Thread(task);
+
+        t1.start();
+        t2.start();
+
+        t1.join();
+        t2.join();
+
+        System.out.println("Final Inventory: " + inventory);
+        System.out.println("Booked Rooms: " + bookedRooms);
     }
 
-    public static void createBooking(int roomNo, String name, String type) {
+    public static synchronized void processBooking() {
 
-        bookings.put(roomNo, name);
-        roomTypes.put(roomNo, type);
-        bookedRooms.add(roomNo);
+        if (bookingQueue.isEmpty()) return;
+
+        BookingRequest request = bookingQueue.poll();
+
+        if (request == null) return;
+
+        String type = request.roomType;
+
+        if (inventory.getOrDefault(type, 0) <= 0) {
+            System.out.println("❌ No rooms available for " + request.guestName);
+            return;
+        }
+
+        if (bookedRooms.contains(request.roomNo)) {
+            System.out.println("❌ Room already booked: " + request.roomNo);
+            return;
+        }
+
         inventory.put(type, inventory.get(type) - 1);
+        bookedRooms.add(request.roomNo);
 
-        System.out.println("✅ Booking created for Room " + roomNo);
-    }
-
-    public static void cancelBooking(int roomNo) throws InvalidCancellationException {
-
-        if (!bookedRooms.contains(roomNo)) {
-            throw new InvalidCancellationException("No active booking found for Room " + roomNo);
-        }
-
-        String type = roomTypes.get(roomNo);
-
-        releasedRooms.push(roomNo);
-
-        bookings.remove(roomNo);
-        roomTypes.remove(roomNo);
-        bookedRooms.remove(roomNo);
-
-        inventory.put(type, inventory.get(type) + 1);
-
-        System.out.println("↩️ Booking cancelled for Room " + roomNo);
-    }
-
-    public static void displayState() {
-        System.out.println("Bookings: " + bookings);
-        System.out.println("Inventory: " + inventory);
-        System.out.println("Rollback Stack: " + releasedRooms);
+        System.out.println("✅ Booked Room " + request.roomNo + " for " + request.guestName);
     }
 }
